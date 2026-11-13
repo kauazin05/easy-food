@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EasyFood</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; display: flex; justify-content: center; padding: 20px; }
+.phone { width: 390px; height: 844px; background: #fff; border-radius: 40px; border: 8px solid #1a1a1a; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.15); display: flex; flex-direction: column; }
+.status-bar { display: flex; justify-content: space-between; padding: 12px 24px 8px; font-size: 14px; font-weight: 600; flex-shrink: 0; }
+.header { display: flex; justify-content: space-between; align-items: center; padding: 8px 20px 16px; border-bottom: 1px solid #f0f0f0; flex-shrink: 0; }
+.header-logo { font-size: 22px; font-weight: 700; font-style: italic; }
+.header-user { font-size: 12px; color: #666; max-width: 110px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+.view.active { display: flex; }
+.search-bar { margin: 16px 20px; display: flex; align-items: center; background: #f8f8f8; border: 1px solid #e8e8e8; border-radius: 12px; padding: 12px 16px; gap: 10px; flex-shrink: 0; }
+.search-bar input { border: none; outline: none; background: transparent; flex: 1; font-size: 15px; }
+.categories { display: flex; gap: 10px; padding: 0 20px 16px; overflow-x: auto; flex-shrink: 0; }
+.categories::-webkit-scrollbar { display: none; }
+.category-chip { padding: 8px 16px; border-radius: 20px; border: 1px solid #e0e0e0; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; user-select: none; }
+.category-chip.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.section-header { padding: 8px 20px 12px; flex-shrink: 0; }
+.section-header h2 { font-size: 18px; font-weight: 700; }
+.list { padding: 0 20px 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; }
+.card { display: flex; align-items: center; padding: 14px; border: 1px solid #f0f0f0; border-radius: 14px; gap: 14px; flex-shrink: 0; }
+.card-img { width: 80px; height: 80px; background: #f0f0f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
+.card-info { flex: 1; min-width: 0; }
+.card-info h3 { font-size: 15px; margin-bottom: 4px; }
+.meta { font-size: 12px; color: #888; margin-bottom: 6px; }
+.rating { display: inline-block; background: #f8f8f8; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 18px; }
+.heart { font-size: 20px; color: #ccc; cursor: pointer; background: none; border: none; }
+.heart.on { color: #e74c3c; }
+.delivery { font-size: 11px; color: #888; text-align: right; }
+.delivery b { color: #333; }
+.btn { display: block; width: 100%; padding: 14px; background: #1a1a1a; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+.btn.light { background: #f8f8f8; color: #333; border: 1px solid #e8e8e8; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.empty { text-align: center; padding: 50px 20px; color: #999; font-size: 14px; }
+.panel { padding: 20px; overflow-y: auto; flex: 1; }
+.panel h2 { font-size: 18px; margin-bottom: 16px; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+.form-group input, .form-group select { width: 100%; padding: 12px 14px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 14px; background: #f8f8f8; outline: none; }
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.tabs .btn { margin-top: 0; }
+.msg { text-align: center; padding: 10px; margin-top: 12px; border-radius: 8px; font-size: 13px; display: none; }
+.msg.ok { display: block; background: #e8f5e9; color: #2e7d32; }
+.msg.err { display: block; background: #fbe9e7; color: #c62828; }
+.bottom-nav { display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #f0f0f0; flex-shrink: 0; }
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; color: #999; cursor: pointer; }
+.nav-item.active { color: #1a1a1a; }
+.nav-item span:first-child { font-size: 20px; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span>📶 🔋</span></div>
+  <div class="header">
+    <span style="font-size:22px">🍴</span>
+    <span class="header-logo">EasyFood</span>
+    <span class="header-user" id="header-user">Visitante</span>
+  </div>
+
+  <!-- INÍCIO -->
+  <div class="view active" id="view-home">
+    <div class="search-bar"><span>🔍</span><input id="search" type="text" placeholder="Buscar restaurantes"></div>
+    <div class="categories" id="categories">
+      <div class="category-chip active" data-category="Todos">🍽️ Todos</div>
+      <div class="category-chip" data-category="Burger">🍔 Burger</div>
+      <div class="category-chip" data-category="Pizza">🍕 Pizza</div>
+      <div class="category-chip" data-category="Sushi">🍣 Sushi</div>
+      <div class="category-chip" data-category="Saudável">🥗 Saudável</div>
+    </div>
+    <div class="section-header"><h2>Restaurantes</h2></div>
+    <div class="list" id="list-home"></div>
+  </div>
+
+  <!-- FAVORITOS -->
+  <div class="view" id="view-favorites">
+    <div class="section-header" style="padding-top:16px"><h2>❤️ Meus favoritos</h2></div>
+    <div class="list" id="list-favorites"></div>
+  </div>
+
+  <!-- CADASTRAR -->
+  <div class="view" id="view-add">
+    <div class="panel">
+      <h2>➕ Cadastrar Restaurante</h2>
+      <div id="add-locked" class="empty" style="display:none">Faça login na aba Perfil para cadastrar um restaurante.</div>
+      <form id="add-form">
+        <div class="form-group"><label>Nome do Restaurante</label><input id="r-name" placeholder="Ex: Taco Loco" required></div>
+        <div class="form-group"><label>Categoria</label>
+          <select id="r-category" required>
+            <option value="">Selecione uma categoria</option>
+            <option>Burger</option><option>Pizza</option><option>Sushi</option><option>Saudável</option>
+          </select></div>
+        <div class="form-group"><label>Avaliação (0 a 5)</label><input id="r-rating" type="number" min="0" max="5" step="0.1" placeholder="Ex: 4.3" required></div>
+        <button class="btn" id="add-btn" type="submit">Cadastrar Restaurante</button>
+      </form>
+      <div class="msg" id="add-msg"></div>
+    </div>
+  </div>
+
+  <!-- PERFIL -->
+  <div class="view" id="view-profile">
+    <div class="panel">
+      <div id="profile-guest">
+        <div class="tabs">
+          <button class="btn" id="tab-login" type="button">Entrar</button>
+          <button class="btn light" id="tab-register" type="button">Criar conta</button>
+        </div>
+        <form id="auth-form">
+          <div class="form-group" id="g-name" style="display:none"><label>Nome</label><input id="a-name"></div>
+          <div class="form-group"><label>E-mail</label><input id="a-email" type="email" required></div>
+          <div class="form-group"><label>Senha</label><input id="a-password" type="password" minlength="6" required></div>
+          <button class="btn" id="auth-btn" type="submit">Entrar</button>
+        </form>
+      </div>
+      <div id="profile-user" style="display:none">
+        <h2 id="p-name"></h2>
+        <p id="p-email" class="meta"></p>
+        <button class="btn light" id="logout-btn" type="button">Sair</button>
+      </div>
+      <div class="msg" id="auth-msg"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active" data-view="home"><span>🏠</span><span>Início</span></div>
+    <div class="nav-item" data-view="add"><span>➕</span><span>Cadastrar</span></div>
+    <div class="nav-item" data-view="favorites"><span>❤️</span><span>Favoritos</span></div>
+    <div class="nav-item" data-view="profile"><span>👤</span><span>Perfil</span></div>
+  </div>
+</div>
+
+<script>
+const PAGE_SIZE = 3;
+const emoji = { Pizza: "🍕", Burger: "🍔", Sushi: "🍣", "Saudável": "🥗" };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const state = {
+  token: localStorage.getItem("token"),
+  user: JSON.parse(localStorage.getItem("user") || "null"),
+  all: [], favs: new Set(), category: "Todos", search: "", page: 1, authMode: "login"
+};
+
+async function api(path, options = {}) {
+  const headers = { "Content-Type": "application/json" };
+  if (state.token) headers.Authorization = "Bearer " + state.token;
+  const res = await fetch(path, { ...options, headers });
+  if (res.status === 204) return null;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Erro na requisição");
+  return data;
+}
+
+function showMsg(el, text, type) {
+  el.textContent = text;
+  el.className = "msg " + type;
+  setTimeout(() => (el.className = "msg"), 3500);
+}
+
+const deliveryPrice = (id) => (3 + ((id * 37) % 50) / 10).toFixed(2).replace(".", ",");
+
+function cardHtml(r) {
+  return `
+  <div class="card">
+    <div class="card-img">${emoji[r.category] || "🏪"}</div>
+    <div class="card-info">
+      <h3>${esc(r.name)}</h3>
+      <div class="meta">${esc(r.category)} • 20-30 min</div>
+      <div class="rating">★ ${r.rating}</div>
+    </div>
+    <div class="card-right">
+      <button class="heart ${state.favs.has(r.id) ? "on" : ""}" data-id="${r.id}">${state.favs.has(r.id) ? "♥" : "♡"}</button>
+      <div class="delivery">Entrega<br><b>R$ ${deliveryPrice(r.id)}</b></div>
+    </div>
+  </div>`;
+}
+
+function renderHome() {
+  const term = state.search.trim().toLowerCase();
+  const filtered = state.all.filter((r) =>
+    (state.category === "Todos" || r.category === state.category) &&
+    r.name.toLowerCase().includes(term));
+  const visible = filtered.slice(0, state.page * PAGE_SIZE);
+  const remaining = filtered.length - visible.length;
+
+  $("list-home").innerHTML = visible.length
+    ? visible.map(cardHtml).join("") +
+      (remaining > 0 ? `<button class="btn light" id="more">Carregar mais (${remaining} restante${remaining > 1 ? "s" : ""})</button>` : "")
+    : `<div class="empty">🔍<br>Nenhum restaurante encontrado.</div>`;
+}
+
+function renderFavorites() {
+  if (!state.token) {
+    $("list-favorites").innerHTML = `<div class="empty">Faça login na aba Perfil para ver seus favoritos.</div>`;
+    return;
+  }
+  const favs = state.all.filter((r) => state.favs.has(r.id));
+  $("list-favorites").innerHTML = favs.length
+    ? favs.map(cardHtml).join("")
+    : `<div class="empty">❤️<br>Você ainda não favoritou nenhum restaurante.</div>`;
+}
+
+function renderProfile() {
+  const logged = !!state.token;
+  $("profile-guest").style.display = logged ? "none" : "block";
+  $("profile-user").style.display = logged ? "block" : "none";
+  $("header-user").textContent = logged ? state.user.name : "Visitante";
+  if (logged) {
+    $("p-name").textContent = "Olá, " + state.user.name;
+    $("p-email").textContent = state.user.email;
+  }
+  $("add-locked").style.display = logged ? "none" : "block";
+  $("add-form").style.display = logged ? "block" : "none";
+}
+
+function renderAll() { renderHome(); renderFavorites(); renderProfile(); }
+
+async function loadRestaurants() {
+  $("list-home").innerHTML = `<div class="empty">Carregando restaurantes...</div>`;
+  try {
+    state.all = await api("/restaurants");
+    renderAll();
+  } catch (e) {
+    $("list-home").innerHTML = `<div class="empty">⚠️ Servidor offline.<br>Rode <code>npm start</code> no terminal.</div>`;
+  }
+}
+
+async function loadFavorites() {
+  state.favs = new Set();
+  if (state.token) {
+    try { (await api("/favorites")).forEach((r) => state.favs.add(r.id)); }
+    catch (e) { if (/Token/.test(e.message)) logout(); }
+  }
+}
+
+async function toggleFavorite(id) {
+  if (!state.token) { switchView("profile"); showMsg($("auth-msg"), "Entre para favoritar restaurantes.", "err"); return; }
+  const isFav = state.favs.has(id);
+  try {
+    await api("/favorites/" + id, { method: isFav ? "DELETE" : "POST" });
+    isFav ? state.favs.delete(id) : state.favs.add(id);
+    renderAll();
+  } catch (e) { alert(e.message); }
+}
+
+function switchView(view) {
+  document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === "view-" + view));
+  document.querySelectorAll(".nav-item").forEach((n) => n.classList.toggle("active", n.dataset.view === view));
+  if (view === "favorites") renderFavorites();
+}
+
+function setSession(data) {
+  state.token = data.token; state.user = data.user;
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("user", JSON.stringify(data.user));
+}
+
+function logout() {
+  state.token = null; state.user = null; state.favs = new Set();
+  localStorage.removeItem("token"); localStorage.removeItem("user");
+  renderAll();
+}
+
+function setAuthMode(mode) {
+  state.authMode = mode;
+  $("g-name").style.display = mode === "register" ? "block" : "none";
+  $("auth-btn").textContent = mode === "register" ? "Criar conta" : "Entrar";
+  $("tab-login").className = "btn" + (mode === "login" ? "" : " light");
+  $("tab-register").className = "btn" + (mode === "register" ? "" : " light");
+}
+
+// ---- eventos ----
+document.querySelectorAll(".nav-item").forEach((n) => n.addEventListener("click", () => switchView(n.dataset.view)));
+
+document.querySelectorAll(".category-chip").forEach((chip) => chip.addEventListener("click", () => {
+  document.querySelectorAll(".category-chip").forEach((c) => c.classList.remove("active"));
+  chip.classList.add("active");
+  state.category = chip.dataset.category; state.page = 1; renderHome();
+}));
+
+$("search").addEventListener("input", (e) => { state.search = e.target.value; state.page = 1; renderHome(); });
+
+document.addEventListener("click", (e) => {
+  const heart = e.target.closest(".heart");
+  if (heart) toggleFavorite(Number(heart.dataset.id));
+  if (e.target.id === "more") { state.page++; renderHome(); }
+});
+
+$("tab-login").addEventListener("click", () => setAuthMode("login"));
+$("tab-register").addEventListener("click", () => setAuthMode("register"));
+$("logout-btn").addEventListener("click", logout);
+
+$("auth-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const body = { email: $("a-email").value, password: $("a-password").value };
+  if (state.authMode === "register") body.name = $("a-name").value;
+  try {
+    setSession(await api("/auth/" + state.authMode, { method: "POST", body: JSON.stringify(body) }));
+    $("auth-form").reset();
+    await loadFavorites();
+    renderAll();
+    switchView("home");
+  } catch (err) { showMsg($("auth-msg"), err.message, "err"); }
+});
+
+$("add-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("add-btn").disabled = true;
+  try {
+    const created = await api("/restaurants", {
+      method: "POST",
+      body: JSON.stringify({ name: $("r-name").value, category: $("r-category").value, rating: parseFloat($("r-rating").value) })
+    });
+    state.all.push(created);
+    $("add-form").reset();
+    renderAll();
+    showMsg($("add-msg"), `✅ "${created.name}" cadastrado com sucesso!`, "ok");
+  } catch (err) {
+    showMsg($("add-msg"), "❌ " + err.message, "err");
+    if (/Token/.test(err.message)) logout();
+  } finally { $("add-btn").disabled = false; }
+});
+
+// ---- inicialização ----
+(async () => { await loadFavorites(); await loadRestaurants(); })();
+</script>
+</body>
+</html>
